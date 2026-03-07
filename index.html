@@ -8,328 +8,494 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ============================================================
+       TOKENS
+       ============================================================ */
+    :root {
+      --navy:      #0b2640;
+      --navy-mid:  #143452;
+      --blue:      #1a6fa0;
+      --teal:      #0a9396;
+      --bg:        #e8eef6;
+      --card:      #ffffff;
+      --border:    rgba(180, 205, 230, 0.55);
+      --text:      #1a2a38;
+      --muted:     #5a7080;
+      --c-normal:  #2563eb;
+      --c-late:    #c87010;
+      --c-pred:    #c83030;
+      --c-gen:     #0a9396;
+      --shadow:    0 1px 4px rgba(10,30,60,0.06), 0 6px 24px rgba(10,30,60,0.09);
+    }
+
     body {
       font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
-      background: #f0f4f1;
-      color: #333;
-      line-height: 1.7;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
     }
 
-    /* ===== Header ===== */
+    /* ============================================================
+       HEADER
+       ============================================================ */
     header {
-      background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 60%, #5a9068 100%);
+      background: linear-gradient(150deg, var(--navy) 0%, #164870 55%, #1a6080 100%);
       color: #fff;
       text-align: center;
-      padding: 52px 20px 40px;
+      padding: 60px 20px 50px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Subtle radial glow orbs */
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 80% at 15% 50%, rgba(100,190,230,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 85% 20%, rgba(60,150,200,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    /* Thin top accent line */
+    header::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--teal), #5bc8e8, var(--teal));
     }
     header h1 {
-      font-size: 2.5em;
+      font-size: 2.55em;
       font-weight: 700;
-      letter-spacing: 3px;
-      margin-bottom: 10px;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+      position: relative;
     }
     header p {
-      font-size: 1.05em;
-      opacity: 0.82;
-      letter-spacing: 1px;
+      font-size: 1.02em;
+      opacity: 0.65;
+      letter-spacing: 2px;
+      position: relative;
     }
 
-    /* ===== Layout ===== */
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
     .container {
-      max-width: 1100px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 32px 20px 48px;
+      padding: 36px 20px 56px;
     }
 
     .section {
-      background: #fff;
-      border-radius: 12px;
-      padding: 28px 32px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+      background: var(--card);
+      border-radius: 14px;
+      padding: 30px 34px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
     }
 
     .section-title {
-      font-size: 1.2em;
+      font-size: 1.1em;
       font-weight: 700;
-      color: #4a7c59;
-      border-bottom: 2px solid #e6f0e8;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
+      color: var(--navy-mid);
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    /* Left accent bar */
+    .section-title::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 1.15em;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--blue), var(--teal));
+      flex-shrink: 0;
     }
 
-    /* ===== 进化机制说明 ===== */
+    /* ============================================================
+       ① 进化机制说明
+       ============================================================ */
     .mech-text {
-      font-size: 0.94em;
-      color: #444;
-      line-height: 1.9;
+      font-size: 0.93em;
+      color: #364555;
+      line-height: 1.95;
     }
     .mech-text p { margin-bottom: 12px; }
-    .mech-text strong { color: #3a6648; }
-    .mech-text em { font-style: normal; color: #6b4c1e; }
+    .mech-text p:last-child { margin-bottom: 0; }
+    .mech-text strong { color: var(--navy-mid); font-weight: 700; }
+    .mech-text em     { font-style: italic; color: #5a6a40; }
 
     .key-concepts {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 12px;
-      margin-top: 18px;
+      margin-top: 20px;
     }
     .concept-box {
-      background: #f3f8f4;
-      border-left: 3px solid #4a7c59;
-      border-radius: 0 6px 6px 0;
-      padding: 12px 16px;
+      background: #f2f7fb;
+      border: 1px solid #c8dcea;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      padding: 13px 16px;
     }
-    .concept-box h4 { font-size: 0.88em; color: #4a7c59; margin-bottom: 4px; }
-    .concept-box p  { font-size: 0.82em; color: #555; line-height: 1.6; }
+    .concept-box h4 {
+      font-size: 0.87em;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 5px;
+    }
+    .concept-box p {
+      font-size: 0.81em;
+      color: var(--muted);
+      line-height: 1.65;
+    }
 
-    /* ===== 参数设置 ===== */
+    /* ============================================================
+       ② 参数设置
+       ============================================================ */
     .params-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 16px;
     }
     .param-group {
-      background: #fafafa;
-      border: 1px solid #e4e4e4;
-      border-radius: 8px;
-      padding: 16px 18px;
+      background: #f4f8fc;
+      border: 1px solid #d0dfee;
+      border-radius: 10px;
+      padding: 17px 19px;
     }
     .param-group-title {
-      font-size: 0.88em;
+      font-size: 0.85em;
       font-weight: 700;
-      color: #4a7c59;
-      border-bottom: 1px solid #ddeedd;
+      color: var(--teal);
+      border-bottom: 1px solid #c8dcea;
       padding-bottom: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 15px;
+      letter-spacing: 0.3px;
     }
-    .param-item { margin-bottom: 15px; }
+    .param-item { margin-bottom: 16px; }
     .param-item:last-child { margin-bottom: 0; }
 
     .param-label {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.86em;
-      color: #444;
+      font-size: 0.85em;
+      color: #334455;
       margin-bottom: 5px;
     }
     .param-val {
       font-weight: 700;
-      color: #4a7c59;
-      min-width: 48px;
+      color: var(--blue);
+      min-width: 52px;
       text-align: right;
+      font-variant-numeric: tabular-nums;
     }
     input[type="range"] {
       width: 100%;
-      accent-color: #4a7c59;
+      accent-color: var(--blue);
       cursor: pointer;
-      height: 4px;
     }
-    .param-hint { font-size: 0.74em; color: #aaa; margin-top: 3px; }
+    .param-hint {
+      font-size: 0.73em;
+      color: #9aacbc;
+      margin-top: 3px;
+    }
 
-    /* late hares linked display */
     .linked-display {
-      font-size: 0.82em;
-      color: #c07030;
-      background: #fff8f0;
-      border: 1px solid #f0d8b0;
-      border-radius: 4px;
-      padding: 4px 10px;
-      margin-top: 6px;
+      font-size: 0.81em;
+      color: var(--c-late);
+      background: #fdf5e8;
+      border: 1px solid #e8d0a0;
+      border-radius: 5px;
+      padding: 5px 10px;
+      margin-top: 7px;
     }
+    .linked-display strong { color: var(--c-late); }
 
-    /* speed select */
     .speed-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.86em;
-      color: #555;
+      font-size: 0.85em;
+      color: #556677;
       margin-top: 6px;
     }
     select {
-      padding: 5px 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 0.9em;
+      padding: 5px 9px;
+      border: 1px solid #c0d0e0;
+      border-radius: 6px;
+      font-size: 0.88em;
       cursor: pointer;
-      accent-color: #4a7c59;
+      background: white;
+      color: var(--text);
     }
 
-    /* ===== 动态模拟区 ===== */
+    /* ============================================================
+       ③ 动态模拟区
+       ============================================================ */
     #simCanvas {
       width: 100%;
       height: 300px;
       border-radius: 8px;
       display: block;
-      border: 1px solid #ddeedd;
+      border: 1px solid #c8dcea;
     }
     .canvas-legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
-      margin-top: 12px;
+      gap: 16px;
+      margin-top: 10px;
       align-items: center;
     }
     .legend-item {
       display: flex;
       align-items: center;
-      gap: 7px;
-      font-size: 0.84em;
-      color: #555;
+      gap: 6px;
+      font-size: 0.81em;
+      color: var(--muted);
     }
     .legend-dot {
-      width: 14px; height: 14px;
+      width: 13px; height: 13px;
       border-radius: 50%;
-      border: 2px solid rgba(0,0,0,0.18);
+      border: 2px solid rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
     .legend-diamond {
-      width: 12px; height: 12px;
-      background: #e05050;
-      border: 2px solid #902020;
+      width: 11px; height: 11px;
+      background: #e04040;
+      border: 2px solid #901010;
       transform: rotate(45deg);
       flex-shrink: 0;
     }
 
-    /* ===== 控制区 ===== */
+    /* ============================================================
+       ④ 数据图表区
+       ============================================================ */
+    .chart-hint {
+      font-size: 0.76em;
+      color: #9aacbc;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .chart-wrap { position: relative; height: 320px; }
+
+    /* ============================================================
+       ⑤ 控制区
+       ============================================================ */
     .ctrl-row {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
     .btn {
-      padding: 10px 22px;
+      padding: 9px 22px;
       border: none;
-      border-radius: 6px;
-      font-size: 0.93em;
+      border-radius: 8px;
+      font-size: 0.91em;
       font-weight: 600;
       cursor: pointer;
-      transition: filter 0.15s, transform 0.1s;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
+      transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
     }
-    .btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-    .btn-start   { background: #4a7c59; color: #fff; }
-    .btn-pause   { background: #6b8f71; color: #fff; }
-    .btn-reset   { background: #c07030; color: #fff; }
-    .btn-save    { background: #fff; color: #4a7c59; border: 1.5px solid #4a7c59; }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(10,40,80,0.18);
+      filter: brightness(1.06);
+    }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-start {
+      background: linear-gradient(135deg, #1a6fa0, #0d5280);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(26,111,160,0.30);
+    }
+    .btn-pause {
+      background: linear-gradient(135deg, #0a9396, #077a7d);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(10,147,150,0.28);
+    }
+    .btn-reset {
+      background: linear-gradient(135deg, #c87010, #a05808);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(200,112,16,0.28);
+    }
+    .btn-save {
+      background: var(--card);
+      color: var(--blue);
+      border: 1.5px solid var(--blue);
+      box-shadow: 0 1px 4px rgba(26,111,160,0.10);
+    }
 
     /* 实时数据面板 */
     .data-panel {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
     }
-    .data-card {
-      background: #fafafa;
-      border: 1px solid #e8e8e8;
-      border-radius: 8px;
-      padding: 12px 14px;
-      text-align: center;
+    @media (max-width: 680px) {
+      .data-panel { grid-template-columns: repeat(3, 1fr); }
     }
-    .data-card-lbl { font-size: 0.76em; color: #999; margin-bottom: 4px; }
-    .data-card-val { font-size: 1.5em; font-weight: 700; color: #333; }
-    .data-card-val.c-gen    { color: #4a7c59; }
-    .data-card-val.c-normal { color: #3b82f6; }
-    .data-card-val.c-late   { color: #d97706; }
-    .data-card-val.c-pred   { color: #dc2626; }
 
-    /* ===== 数据图表区 ===== */
-    .chart-wrap { position: relative; height: 320px; }
+    .data-card {
+      background: #f8fafc;
+      border: 1px solid #dce8f0;
+      border-radius: 10px;
+      padding: 13px 14px;
+      text-align: center;
+      border-top: 3px solid #dce8f0;  /* overridden per card below */
+    }
+    .data-panel .data-card:nth-child(1) { border-top-color: var(--c-gen);    }
+    .data-panel .data-card:nth-child(2) { border-top-color: var(--c-normal); }
+    .data-panel .data-card:nth-child(3) { border-top-color: var(--c-late);   }
+    .data-panel .data-card:nth-child(4) { border-top-color: var(--c-pred);   }
+    .data-panel .data-card:nth-child(5) { border-top-color: #7c3aed;         }
 
-    /* ===== 自动结论区 ===== */
+    .data-card-lbl {
+      font-size: 0.74em;
+      color: #8a9eae;
+      margin-bottom: 5px;
+      letter-spacing: 0.3px;
+    }
+    .data-card-val {
+      font-size: 1.55em;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .data-card-val.c-gen    { color: var(--c-gen);    }
+    .data-card-val.c-normal { color: var(--c-normal); }
+    .data-card-val.c-late   { color: var(--c-late);   }
+    .data-card-val.c-pred   { color: var(--c-pred);   }
+
+    /* ============================================================
+       ⑥ 自动结论
+       ============================================================ */
     #conclusionSection { display: none; }
+
     .conclusion-box {
-      background: linear-gradient(135deg, #f2f8f3, #e8f4ea);
-      border: 1.5px solid #a8d0b0;
-      border-radius: 8px;
+      background: linear-gradient(135deg, #f0f7ff, #e8f4f8);
+      border: 1px solid #b8d8ee;
+      border-left: 4px solid var(--blue);
+      border-radius: 0 10px 10px 0;
       padding: 20px 24px;
     }
     .conclusion-badge {
       display: inline-block;
-      background: #4a7c59;
+      background: var(--blue);
       color: #fff;
-      font-size: 0.78em;
-      font-weight: 600;
-      padding: 2px 10px;
+      font-size: 0.76em;
+      font-weight: 700;
+      padding: 3px 12px;
       border-radius: 20px;
-      margin-bottom: 10px;
-      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      letter-spacing: 0.6px;
     }
     .conclusion-text {
       font-size: 0.93em;
-      color: #333;
-      line-height: 1.9;
+      color: #2a3a4a;
+      line-height: 1.95;
     }
+    .conclusion-text strong { color: var(--navy-mid); }
 
-    /* ===== 扩展知识区 ===== */
+    /* ============================================================
+       ⑦ 扩展知识
+       ============================================================ */
     .knowledge-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
     }
     .knowledge-card {
-      background: #fafafa;
-      border: 1px solid #e8e8e8;
-      border-radius: 8px;
-      padding: 16px 18px;
+      background: #f8fafc;
+      border: 1px solid #d0e0ee;
+      border-radius: 10px;
+      border-top: 3px solid var(--teal);
+      padding: 17px 18px;
     }
     .knowledge-card h4 {
-      font-size: 0.9em;
-      color: #4a7c59;
+      font-size: 0.89em;
+      color: var(--navy-mid);
       margin-bottom: 8px;
       font-weight: 700;
     }
     .knowledge-card p {
       font-size: 0.83em;
-      color: #555;
-      line-height: 1.75;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .knowledge-card strong { color: var(--navy-mid); }
+
+    /* ============================================================
+       ⑧ 页尾
+       ============================================================ */
+    footer {
+      background: linear-gradient(150deg, var(--navy) 0%, #143452 100%);
+      color: #8aaccc;
+      padding: 40px 20px 24px;
+    }
+    .footer-inner { max-width: 1120px; margin: 0 auto; }
+
+    .footer-cols {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .footer-brand h2 {
+      font-size: 1.05em;
+      color: #c8e0f4;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .footer-brand p {
+      font-size: 0.80em;
+      color: #6a90b0;
+      line-height: 1.6;
+      max-width: 260px;
     }
 
-    /* ===== 页尾 ===== */
-    footer {
-      background: #253328;
-      color: #bbb;
-      padding: 44px 20px 24px;
-    }
-    .footer-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 32px;
-      margin-bottom: 30px;
-    }
     .footer-col h3 {
-      font-size: 0.92em;
-      color: #8fc99a;
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #3a4d3e;
+      font-size: 0.82em;
+      font-weight: 700;
+      color: #5bc8e8;
+      margin-bottom: 12px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
     }
     .footer-col ul { list-style: none; }
     .footer-col ul li {
-      font-size: 0.83em;
-      padding: 4px 0;
-      color: #9ab;
+      font-size: 0.81em;
+      padding: 3px 0;
+      color: #6a90b0;
+    }
+
+    .footer-divider {
+      border: none;
+      border-top: 1px solid #1e3d5a;
+      margin-bottom: 16px;
     }
     .footer-bottom {
       text-align: center;
-      font-size: 0.78em;
-      color: #667;
-      padding-top: 16px;
-      border-top: 1px solid #3a4d3e;
+      font-size: 0.76em;
+      color: #4a6880;
     }
 
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
     @media (max-width: 640px) {
-      header h1 { font-size: 1.6em; }
-      .footer-grid { grid-template-columns: 1fr; }
-      .section { padding: 20px 18px; }
+      header h1 { font-size: 1.6em; letter-spacing: 2px; }
+      .section  { padding: 20px 18px; }
+      .data-panel { grid-template-columns: repeat(3, 1fr); }
+      .footer-cols { flex-direction: column; }
     }
   </style>
 </head>
@@ -375,10 +541,8 @@
     <div class="section-title">参数设置</div>
     <div class="params-grid">
 
-      <!-- 环境参数 -->
       <div class="param-group">
         <div class="param-group-title">环境参数</div>
-
         <div class="param-item">
           <div class="param-label">
             <span>初雪推迟天数</span>
@@ -387,7 +551,6 @@
           <input type="range" id="snowDelay" min="0" max="60" value="20" step="1">
           <div class="param-hint">0–60 天｜越大越有利于晚换毛个体</div>
         </div>
-
         <div class="param-item">
           <div class="param-label">
             <span>捕食压力</span>
@@ -396,7 +559,6 @@
           <input type="range" id="predPressure" min="0.10" max="0.80" value="0.35" step="0.01">
           <div class="param-hint">0.10–0.80（年基础捕食死亡率）</div>
         </div>
-
         <div class="param-item">
           <div class="param-label">
             <span>环境承载力</span>
@@ -407,10 +569,8 @@
         </div>
       </div>
 
-      <!-- 初始种群 -->
       <div class="param-group">
         <div class="param-group-title">初始种群（总计 100 个体）</div>
-
         <div class="param-item">
           <div class="param-label">
             <span>正常换毛雪兔</span>
@@ -419,7 +579,6 @@
           <input type="range" id="normalHares" min="0" max="100" value="80" step="1">
           <div class="linked-display">较晚换毛雪兔：<strong id="v-lateHares">20</strong> 个（自动联动）</div>
         </div>
-
         <div class="param-item">
           <div class="param-label">
             <span>捕食者初始数量</span>
@@ -430,10 +589,8 @@
         </div>
       </div>
 
-      <!-- 生物参数 -->
       <div class="param-group">
         <div class="param-group-title">生物参数</div>
-
         <div class="param-item">
           <div class="param-label">
             <span>基础繁殖率</span>
@@ -442,7 +599,6 @@
           <input type="range" id="reproRate" min="1.2" max="2.5" value="1.8" step="0.1">
           <div class="param-hint">1.2–2.5（存活个体的后代倍数）</div>
         </div>
-
         <div class="param-item">
           <div class="param-label">
             <span>变异概率</span>
@@ -453,10 +609,8 @@
         </div>
       </div>
 
-      <!-- 模拟控制参数 -->
       <div class="param-group">
         <div class="param-group-title">模拟控制</div>
-
         <div class="param-item">
           <div class="param-label">
             <span>模拟总世代数</span>
@@ -465,7 +619,6 @@
           <input type="range" id="totalGen" min="10" max="100" value="30" step="5">
           <div class="param-hint">10–100 世代</div>
         </div>
-
         <div class="param-item">
           <div class="speed-row">
             <span>模拟速度：</span>
@@ -501,6 +654,15 @@
     </div>
   </div>
 
+  <!-- ④ 数据图表区 -->
+  <div class="section">
+    <div class="section-title">数据图表区</div>
+    <div class="chart-hint">横轴：世代数 &nbsp;|&nbsp; 左纵轴：雪兔数量 &nbsp;|&nbsp; 右纵轴：捕食者数量 &nbsp;|&nbsp; 折线实时更新，体现协同进化动态 &nbsp;|&nbsp; <strong>点击图例名称可切换折线显示/隐藏</strong></div>
+    <div class="chart-wrap">
+      <canvas id="popChart"></canvas>
+    </div>
+  </div>
+
   <!-- ⑤ 交互按钮区 -->
   <div class="section">
     <div class="section-title">模拟控制与实时数据</div>
@@ -531,17 +693,6 @@
         <div class="data-card-lbl">晚换毛占比</div>
         <div class="data-card-val"          id="d-ratio">20.0%</div>
       </div>
-    </div>
-  </div>
-
-  <!-- ④ 数据图表区 -->
-  <div class="section">
-    <div class="section-title">数据图表区</div>
-    <p style="font-size:0.83em; color:#999; margin-bottom:16px;">
-      横轴：世代数 &nbsp;|&nbsp; 左纵轴：雪兔数量 &nbsp;|&nbsp; 右纵轴：捕食者数量 &nbsp;|&nbsp; 折线实时更新，体现协同进化动态
-    </p>
-    <div class="chart-wrap">
-      <canvas id="popChart"></canvas>
     </div>
   </div>
 
@@ -582,7 +733,11 @@
 <!-- ⑧ 页尾 -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-grid">
+    <div class="footer-cols">
+      <div class="footer-brand">
+        <h2>雪兔数量动态可视化</h2>
+        <p>初中生物课堂互动模拟工具<br>适用年级：八年级生物<br>课题：生物进化的动力</p>
+      </div>
       <div class="footer-col">
         <h3>教学资源</h3>
         <ul>
@@ -593,8 +748,9 @@
         </ul>
       </div>
     </div>
+    <hr class="footer-divider">
     <div class="footer-bottom">
-      以上内容由 AI 辅助生成，仅供教学参考 &nbsp;|&nbsp; 适用年级：八年级生物 &nbsp;|&nbsp; 课题：生物进化的动力
+      以上内容由 AI 辅助生成，仅供教学参考
     </div>
   </div>
 </footer>
@@ -895,28 +1051,28 @@ function drawCanvas() {
   });
 
   /* 信息框（左上角） */
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fillStyle = 'rgba(255,255,255,0.90)';
   ctx.beginPath();
   ctx.roundRect(10, 10, 200, 72, 6);
   ctx.fill();
-  ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#4a7c59';
+  ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#0a5280';
   ctx.fillText(`第 ${SIM.gen} 世代`, 20, 28);
-  ctx.font = '11px sans-serif'; ctx.fillStyle = '#3b82f6';
+  ctx.font = '11px sans-serif'; ctx.fillStyle = '#2563eb';
   ctx.fillText(`正常换毛: ${Math.round(SIM.normal)}`, 20, 45);
-  ctx.fillStyle = '#d97706';
+  ctx.fillStyle = '#c87010';
   ctx.fillText(`较晚换毛: ${Math.round(SIM.late)}`, 20, 61);
-  ctx.fillStyle = '#dc2626';
+  ctx.fillStyle = '#c83030';
   ctx.fillText(`捕食者: ${Math.round(SIM.pred)}`, 110, 45);
 
   /* 右上角气候提示 */
   const climate = snowDelay === 0 ? '正常气候' : snowDelay < 20 ? '轻度变暖' : snowDelay < 40 ? '中度变暖' : '严重变暖';
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fillStyle = 'rgba(255,255,255,0.90)';
   ctx.beginPath();
   ctx.roundRect(W - 160, 10, 150, 38, 6);
   ctx.fill();
-  ctx.font = '11px sans-serif'; ctx.fillStyle = '#555';
+  ctx.font = '11px sans-serif'; ctx.fillStyle = '#445566';
   ctx.fillText(`初雪推迟 ${snowDelay} 天`, W - 148, 26);
-  ctx.fillStyle = snowDelay > 30 ? '#c05010' : '#4a7c59';
+  ctx.fillStyle = snowDelay > 30 ? '#c87010' : '#0a9396';
   ctx.fillText(climate, W - 148, 40);
 }
 
@@ -951,8 +1107,8 @@ function initChart() {
         {
           label: '正常换毛雪兔',
           data: [],
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59,130,246,0.07)',
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,0.07)',
           borderWidth: 2.5,
           pointRadius: 3,
           tension: 0.35,
@@ -961,8 +1117,8 @@ function initChart() {
         {
           label: '较晚换毛雪兔',
           data: [],
-          borderColor: '#d97706',
-          backgroundColor: 'rgba(217,119,6,0.07)',
+          borderColor: '#c87010',
+          backgroundColor: 'rgba(200,112,16,0.07)',
           borderWidth: 2.5,
           pointRadius: 3,
           tension: 0.35,
@@ -971,13 +1127,23 @@ function initChart() {
         {
           label: '捕食者',
           data: [],
-          borderColor: '#dc2626',
-          backgroundColor: 'rgba(220,38,38,0.04)',
+          borderColor: '#c83030',
+          backgroundColor: 'rgba(200,48,48,0.04)',
           borderWidth: 2,
           pointRadius: 3,
           tension: 0.35,
           fill: false,
           yAxisID: 'yPred'
+        },
+        {
+          label: '雪兔总数',
+          data: [],
+          borderColor: '#0a9396',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.35,
+          fill: false
         }
       ]
     },
@@ -987,7 +1153,7 @@ function initChart() {
       animation: { duration: 0 },
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'top', labels: { font: { size: 12 }, padding: 16 } },
+        legend: { position: 'top', labels: { font: { size: 11 }, padding: 14 } },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.raw)}`
@@ -996,17 +1162,17 @@ function initChart() {
       },
       scales: {
         x: {
-          title: { display: true, text: '世代数', font: { size: 12 } },
+          title: { display: true, text: '世代数', font: { size: 11 } },
           grid: { color: 'rgba(0,0,0,0.04)' }
         },
         y: {
-          title: { display: true, text: '雪兔数量', font: { size: 12 } },
+          title: { display: true, text: '雪兔数量', font: { size: 11 } },
           beginAtZero: true,
           grid: { color: 'rgba(0,0,0,0.04)' }
         },
         yPred: {
           position: 'right',
-          title: { display: true, text: '捕食者数量', font: { size: 12 } },
+          title: { display: true, text: '捕食者数量', font: { size: 11 } },
           beginAtZero: true,
           grid: { drawOnChartArea: false }
         }
@@ -1020,6 +1186,7 @@ function pushChartPoint(gen, normal, late, pred) {
   chart.data.datasets[0].data.push(Math.round(normal));
   chart.data.datasets[1].data.push(Math.round(late));
   chart.data.datasets[2].data.push(Math.round(pred));
+  chart.data.datasets[3].data.push(Math.round(normal + late));
   chart.update('none');
 }
 

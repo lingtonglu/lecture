@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雪兔数量动态可视化</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+      background: #f0f4f1;
+      color: #333;
+      line-height: 1.7;
+    }
+
+    /* ===== Header ===== */
+    header {
+      background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 60%, #5a9068 100%);
+      color: #fff;
+      text-align: center;
+      padding: 52px 20px 40px;
+    }
+    header h1 {
+      font-size: 2.5em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+    header p {
+      font-size: 1.05em;
+      opacity: 0.82;
+      letter-spacing: 1px;
+    }
+
+    /* ===== Layout ===== */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+    }
+
+    .section-title {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #4a7c59;
+      border-bottom: 2px solid #e6f0e8;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* ===== 进化机制说明 ===== */
+    .mech-text {
+      font-size: 0.94em;
+      color: #444;
+      line-height: 1.9;
+    }
+    .mech-text p { margin-bottom: 12px; }
+    .mech-text strong { color: #3a6648; }
+    .mech-text em { font-style: normal; color: #6b4c1e; }
+
+    .key-concepts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .concept-box {
+      background: #f3f8f4;
+      border-left: 3px solid #4a7c59;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 16px;
+    }
+    .concept-box h4 { font-size: 0.88em; color: #4a7c59; margin-bottom: 4px; }
+    .concept-box p  { font-size: 0.82em; color: #555; line-height: 1.6; }
+
+    /* ===== 参数设置 ===== */
+    .params-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+    .param-group {
+      background: #fafafa;
+      border: 1px solid #e4e4e4;
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+    .param-group-title {
+      font-size: 0.88em;
+      font-weight: 700;
+      color: #4a7c59;
+      border-bottom: 1px solid #ddeedd;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .param-item { margin-bottom: 15px; }
+    .param-item:last-child { margin-bottom: 0; }
+
+    .param-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.86em;
+      color: #444;
+      margin-bottom: 5px;
+    }
+    .param-val {
+      font-weight: 700;
+      color: #4a7c59;
+      min-width: 48px;
+      text-align: right;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #4a7c59;
+      cursor: pointer;
+      height: 4px;
+    }
+    .param-hint { font-size: 0.74em; color: #aaa; margin-top: 3px; }
+
+    /* late hares linked display */
+    .linked-display {
+      font-size: 0.82em;
+      color: #c07030;
+      background: #fff8f0;
+      border: 1px solid #f0d8b0;
+      border-radius: 4px;
+      padding: 4px 10px;
+      margin-top: 6px;
+    }
+
+    /* speed select */
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.86em;
+      color: #555;
+      margin-top: 6px;
+    }
+    select {
+      padding: 5px 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 0.9em;
+      cursor: pointer;
+      accent-color: #4a7c59;
+    }
+
+    /* ===== 动态模拟区 ===== */
+    #simCanvas {
+      width: 100%;
+      height: 300px;
+      border-radius: 8px;
+      display: block;
+      border: 1px solid #ddeedd;
+    }
+    .canvas-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 12px;
+      align-items: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.84em;
+      color: #555;
+    }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.18);
+      flex-shrink: 0;
+    }
+    .legend-diamond {
+      width: 12px; height: 12px;
+      background: #e05050;
+      border: 2px solid #902020;
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+
+    /* ===== 控制区 ===== */
+    .ctrl-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.93em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+      letter-spacing: 0.5px;
+    }
+    .btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-start   { background: #4a7c59; color: #fff; }
+    .btn-pause   { background: #6b8f71; color: #fff; }
+    .btn-reset   { background: #c07030; color: #fff; }
+    .btn-save    { background: #fff; color: #4a7c59; border: 1.5px solid #4a7c59; }
+
+    /* 实时数据面板 */
+    .data-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+    .data-card {
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .data-card-lbl { font-size: 0.76em; color: #999; margin-bottom: 4px; }
+    .data-card-val { font-size: 1.5em; font-weight: 700; color: #333; }
+    .data-card-val.c-gen    { color: #4a7c59; }
+    .data-card-val.c-normal { color: #3b82f6; }
+    .data-card-val.c-late   { color: #d97706; }
+    .data-card-val.c-pred   { color: #dc2626; }
+
+    /* ===== 数据图表区 ===== */
+    .chart-wrap { position: relative; height: 320px; }
+
+    /* ===== 自动结论区 ===== */
+    #conclusionSection { display: none; }
+    .conclusion-box {
+      background: linear-gradient(135deg, #f2f8f3, #e8f4ea);
+      border: 1.5px solid #a8d0b0;
+      border-radius: 8px;
+      padding: 20px 24px;
+    }
+    .conclusion-badge {
+      display: inline-block;
+      background: #4a7c59;
+      color: #fff;
+      font-size: 0.78em;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .conclusion-text {
+      font-size: 0.93em;
+      color: #333;
+      line-height: 1.9;
+    }
+
+    /* ===== 扩展知识区 ===== */
+    .knowledge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .knowledge-card {
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+    .knowledge-card h4 {
+      font-size: 0.9em;
+      color: #4a7c59;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .knowledge-card p {
+      font-size: 0.83em;
+      color: #555;
+      line-height: 1.75;
+    }
+
+    /* ===== 页尾 ===== */
+    footer {
+      background: #253328;
+      color: #bbb;
+      padding: 44px 20px 24px;
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-bottom: 30px;
+    }
+    .footer-col h3 {
+      font-size: 0.92em;
+      color: #8fc99a;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #3a4d3e;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li {
+      font-size: 0.83em;
+      padding: 4px 0;
+      color: #9ab;
+    }
+    .footer-bottom {
+      text-align: center;
+      font-size: 0.78em;
+      color: #667;
+      padding-top: 16px;
+      border-top: 1px solid #3a4d3e;
+    }
+
+    @media (max-width: 640px) {
+      header h1 { font-size: 1.6em; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .section { padding: 20px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>雪兔数量动态可视化</h1>
+  <p>遗传变异与自然选择下的种群协同进化模拟</p>
+</header>
+
+<div class="container">
+
+  <!-- ① 进化机制说明区 -->
+  <div class="section">
+    <div class="section-title">进化机制说明</div>
+    <div class="mech-text">
+      <p>雪兔（<em>Lepus americanus</em>）是北美寒带地区的代表性物种，以<strong>季节性换毛</strong>作为核心生存策略：每年秋末变为白色以融入雪地背景，天敌难以发现；翌年春季再换回褐色。然而，自然种群中个体换毛时间存在遗传性差异——<strong>正常换毛个体</strong>如期变白，<strong>较晚换毛个体</strong>则推迟变色。</p>
+      <p>随着全球气候变暖，初雪日期逐年推迟，原本具有适应优势的"及时变白"性状开始成为负担：白色雪兔站在尚未积雪的褐色地面上，极为醒目，被捕食风险大幅上升。这正是<strong>达尔文自然选择学说</strong>的生动体现——环境改变了不同变异个体的相对适合度，进而推动种群遗传组成定向改变。</p>
+      <p>本模拟还体现了<strong>协同进化</strong>思想：雪兔与捕食者（猞猁、狐狸等）之间相互施加选择压力，猎物数量影响天敌种群，天敌数量反过来塑造猎物——双方在长期生存博弈中共同进化，形成经典的捕食者–猎物种群振荡曲线。</p>
+    </div>
+    <div class="key-concepts">
+      <div class="concept-box">
+        <h4>遗传变异</h4>
+        <p>种群内换毛时间存在可遗传的个体差异，是自然选择的原材料。</p>
+      </div>
+      <div class="concept-box">
+        <h4>环境选择</h4>
+        <p>初雪推迟使晚换毛个体与地面背景匹配时间更长，被捕食率更低。</p>
+      </div>
+      <div class="concept-box">
+        <h4>适者生存</h4>
+        <p>适合度高的个体留下更多后代，有利变异在种群中逐代积累。</p>
+      </div>
+      <div class="concept-box">
+        <h4>协同进化</h4>
+        <p>雪兔与捕食者相互作用，种群数量呈现周期性振荡，体现"军备竞赛"。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 参数设置区 -->
+  <div class="section">
+    <div class="section-title">参数设置</div>
+    <div class="params-grid">
+
+      <!-- 环境参数 -->
+      <div class="param-group">
+        <div class="param-group-title">环境参数</div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>初雪推迟天数</span>
+            <span class="param-val" id="v-snowDelay">20</span>
+          </div>
+          <input type="range" id="snowDelay" min="0" max="60" value="20" step="1">
+          <div class="param-hint">0–60 天｜越大越有利于晚换毛个体</div>
+        </div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>捕食压力</span>
+            <span class="param-val" id="v-predPressure">0.35</span>
+          </div>
+          <input type="range" id="predPressure" min="0.10" max="0.80" value="0.35" step="0.01">
+          <div class="param-hint">0.10–0.80（年基础捕食死亡率）</div>
+        </div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>环境承载力</span>
+            <span class="param-val" id="v-carryCap">200</span>
+          </div>
+          <input type="range" id="carryCap" min="100" max="500" value="200" step="10">
+          <div class="param-hint">100–500（雪兔种群数量上限）</div>
+        </div>
+      </div>
+
+      <!-- 初始种群 -->
+      <div class="param-group">
+        <div class="param-group-title">初始种群（总计 100 个体）</div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>正常换毛雪兔</span>
+            <span class="param-val" id="v-normalHares">80</span>
+          </div>
+          <input type="range" id="normalHares" min="0" max="100" value="80" step="1">
+          <div class="linked-display">较晚换毛雪兔：<strong id="v-lateHares">20</strong> 个（自动联动）</div>
+        </div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>捕食者初始数量</span>
+            <span class="param-val" id="v-initPred">15</span>
+          </div>
+          <input type="range" id="initPred" min="5" max="80" value="15" step="1">
+          <div class="param-hint">5–80（天敌初始种群大小）</div>
+        </div>
+      </div>
+
+      <!-- 生物参数 -->
+      <div class="param-group">
+        <div class="param-group-title">生物参数</div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>基础繁殖率</span>
+            <span class="param-val" id="v-reproRate">1.8</span>
+          </div>
+          <input type="range" id="reproRate" min="1.2" max="2.5" value="1.8" step="0.1">
+          <div class="param-hint">1.2–2.5（存活个体的后代倍数）</div>
+        </div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>变异概率</span>
+            <span class="param-val" id="v-mutRate">2.0%</span>
+          </div>
+          <input type="range" id="mutRate" min="0" max="5" value="2" step="0.1">
+          <div class="param-hint">0–5%（正常→晚换毛；反向概率极低 0.1%）</div>
+        </div>
+      </div>
+
+      <!-- 模拟控制参数 -->
+      <div class="param-group">
+        <div class="param-group-title">模拟控制</div>
+
+        <div class="param-item">
+          <div class="param-label">
+            <span>模拟总世代数</span>
+            <span class="param-val" id="v-totalGen">30</span>
+          </div>
+          <input type="range" id="totalGen" min="10" max="100" value="30" step="5">
+          <div class="param-hint">10–100 世代</div>
+        </div>
+
+        <div class="param-item">
+          <div class="speed-row">
+            <span>模拟速度：</span>
+            <select id="simSpeed">
+              <option value="1000">慢速（1 s / 代）</option>
+              <option value="500" selected>正常（0.5 s / 代）</option>
+              <option value="200">快速（0.2 s / 代）</option>
+              <option value="60">极快（0.06 s / 代）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 动态模拟区 -->
+  <div class="section">
+    <div class="section-title">动态模拟区</div>
+    <canvas id="simCanvas" width="1060" height="300"></canvas>
+    <div class="canvas-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#c8e8f8; border-color:#5a9fc0;"></div>
+        正常换毛雪兔（白色毛）
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#c89050; border-color:#8a5820;"></div>
+        较晚换毛雪兔（褐色毛）
+      </div>
+      <div class="legend-item">
+        <div class="legend-diamond"></div>
+        捕食者（猞猁 / 狐狸）
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 交互按钮区 -->
+  <div class="section">
+    <div class="section-title">模拟控制与实时数据</div>
+    <div class="ctrl-row">
+      <button class="btn btn-start" id="startBtn" onclick="handleStart()">&#9654; 开始模拟</button>
+      <button class="btn btn-pause" id="pauseBtn" onclick="handlePause()" disabled>&#9646;&#9646; 暂停模拟</button>
+      <button class="btn btn-reset" id="resetBtn" onclick="handleReset()">&#8635; 重置模拟</button>
+      <button class="btn btn-save"  id="saveBtn"  onclick="handleSave()">&#8595; 保存当前状态</button>
+    </div>
+    <div class="data-panel">
+      <div class="data-card">
+        <div class="data-card-lbl">当前世代</div>
+        <div class="data-card-val c-gen"    id="d-gen">0</div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-lbl">正常换毛数量</div>
+        <div class="data-card-val c-normal" id="d-normal">80</div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-lbl">较晚换毛数量</div>
+        <div class="data-card-val c-late"   id="d-late">20</div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-lbl">捕食者数量</div>
+        <div class="data-card-val c-pred"   id="d-pred">15</div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-lbl">晚换毛占比</div>
+        <div class="data-card-val"          id="d-ratio">20.0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 数据图表区 -->
+  <div class="section">
+    <div class="section-title">数据图表区</div>
+    <p style="font-size:0.83em; color:#999; margin-bottom:16px;">
+      横轴：世代数 &nbsp;|&nbsp; 左纵轴：雪兔数量 &nbsp;|&nbsp; 右纵轴：捕食者数量 &nbsp;|&nbsp; 折线实时更新，体现协同进化动态
+    </p>
+    <div class="chart-wrap">
+      <canvas id="popChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ⑥ 自动结论区 -->
+  <div class="section" id="conclusionSection">
+    <div class="section-title">自动结论</div>
+    <div class="conclusion-box">
+      <div class="conclusion-badge">模拟结果分析</div>
+      <div class="conclusion-text" id="conclusionText"></div>
+    </div>
+  </div>
+
+  <!-- ⑦ 扩展知识区 -->
+  <div class="section">
+    <div class="section-title">扩展知识</div>
+    <div class="knowledge-grid">
+      <div class="knowledge-card">
+        <h4>雪兔换毛错配研究</h4>
+        <p>美国科学家 L. Scott Mills 团队（2013–2018）对北美雪兔进行长期追踪，发现在积雪减少的地区，白色雪兔的被捕食率比历史均值高约 7 倍。研究还记录到，在气候变暖压力下，部分种群中晚换毛基因频率在约 30 年内上升了近 4%，为"进化速度能否跟上气候变化"提供了直接证据。</p>
+      </div>
+      <div class="knowledge-card">
+        <h4>猞猁与雪兔的协同进化</h4>
+        <p>加拿大哈德逊湾公司的皮草贸易记录（1845 年至今）揭示了猞猁与雪兔约 10 年为周期的种群振荡：雪兔高峰后 1–2 年，猞猁数量随之达到峰值，随后双方均大幅下降。这种振荡是两种生物相互施加选择压力、长期协同进化的典型案例。</p>
+      </div>
+      <div class="knowledge-card">
+        <h4>气候变化与进化错配</h4>
+        <p>雪兔换毛时间由光周期（日照长短）控制，而非直接感知温度或降雪。气候变暖推迟了积雪时间，但光周期不变，导致雪兔仍按固定节律变白，却面对尚未积雪的褐色地面——这种"进化错配"（Evolutionary Mismatch）使原本的适应性反成负担，是自然选择在现代气候危机下仍在持续发挥作用的鲜活案例。</p>
+      </div>
+      <div class="knowledge-card">
+        <h4>自然选择的四大要素</h4>
+        <p>达尔文自然选择学说的核心包含四个要素：①<strong>过度繁殖</strong>——后代数远超存活数；②<strong>遗传变异</strong>——个体间存在可遗传差异；③<strong>生存斗争</strong>——资源有限，个体竞争；④<strong>适者生存</strong>——适合度高的个体留下更多后代。雪兔案例完整体现了这四个要素，是初中生物课最直观的进化教学材料之一。</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ⑧ 页尾 -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h3>相关研究</h3>
+        <ul>
+          <li>Mills et al. (2013) 换毛错配研究</li>
+          <li>Zimova et al. (2016) 适合度代价</li>
+          <li>Krebs et al. (2001) 猞猁周期研究</li>
+          <li>Sunyer et al. (2021) 气候适应性</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>教学资源</h3>
+        <ul>
+          <li>初中生物·生物进化单元</li>
+          <li>上海教育出版社《生物学》八年级</li>
+          <li>课题：生物进化的动力</li>
+          <li>种群遗传学基础入门</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>参考文献</h3>
+        <ul>
+          <li>Mills, LS et al. (2013). Science</li>
+          <li>Zimova, M et al. (2016). Ecol Lett</li>
+          <li>Krebs, CJ et al. (2001). Science</li>
+          <li>Darwin, C (1859). Origin of Species</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      以上内容由 AI 辅助生成，仅供教学参考 &nbsp;|&nbsp; 适用年级：八年级生物 &nbsp;|&nbsp; 课题：生物进化的动力
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ================================================================
+   雪兔遗传变异与自然选择模拟 — 核心逻辑
+   ================================================================ */
+
+// ---------- 全局状态 ----------
+const SIM = {
+  running : false,
+  paused  : false,
+  gen     : 0,
+  normal  : 80,   // 正常换毛雪兔数量
+  late    : 20,   // 较晚换毛雪兔数量
+  pred    : 15,   // 捕食者数量
+  history : [],   // [{gen, normal, late, pred, lateRatio}]
+  timer   : null,
+  animId  : null,
+  particles: []
+};
+
+// ---------- Canvas ----------
+const canvas = document.getElementById('simCanvas');
+const ctx    = canvas.getContext('2d');
+
+// 预生成树的位置（固定）
+const TREE_POS = [0.04,0.10,0.18,0.27,0.38,0.50,0.61,0.72,0.82,0.91,0.97];
+
+// ---------- 读取参数 ----------
+function getParams() {
+  return {
+    snowDelay  : +document.getElementById('snowDelay').value,
+    predPress  : +document.getElementById('predPressure').value,
+    carryCap   : +document.getElementById('carryCap').value,
+    initNormal : +document.getElementById('normalHares').value,
+    initLate   : 100 - (+document.getElementById('normalHares').value),
+    initPred   : +document.getElementById('initPred').value,
+    reproRate  : +document.getElementById('reproRate').value,
+    mutRate    : (+document.getElementById('mutRate').value) / 100,
+    totalGen   : +document.getElementById('totalGen').value,
+    simSpeed   : +document.getElementById('simSpeed').value
+  };
+}
+
+// ================================================================
+//  模拟核心：计算下一代
+// ================================================================
+function simStep() {
+  const p = getParams();
+  const delayFactor = p.snowDelay / 60;  // 0–1，越大越有利于晚换毛
+
+  /* 捕食者相对于初始数量的倍数，影响整体捕食强度 */
+  const predScale = Math.min(2.8, SIM.pred / Math.max(1, p.initPred));
+
+  /* 各类雪兔的被捕食率：
+     正常换毛 → 初雪推迟时白色毛在褐色地面显眼，捕食率随 delay 升高
+     较晚换毛 → 初雪推迟时褐色毛与地面匹配，捕食率随 delay 降低         */
+  const normalPredRate = Math.min(0.92, p.predPress * (1 + delayFactor * 1.6) * predScale);
+  const latePredRate   = Math.min(0.92, p.predPress * Math.max(0.05, 1 - delayFactor * 0.75) * predScale);
+
+  /* 存活个体数 */
+  const normalSurv = SIM.normal * (1 - normalPredRate);
+  const lateSurv   = SIM.late   * (1 - latePredRate);
+
+  /* 被捕食总数（用于驱动捕食者增长） */
+  const eaten = (SIM.normal - normalSurv) + (SIM.late - lateSurv);
+
+  /* 种群密度制约（逻辑斯谛）：存活者越密集，繁殖空间越少 */
+  const logistic = Math.max(0.08, 1 - (normalSurv + lateSurv) / p.carryCap);
+
+  /* 繁殖 */
+  let newNormal = normalSurv * p.reproRate * logistic;
+  let newLate   = lateSurv   * p.reproRate * logistic;
+
+  /* 变异：正常 → 晚换毛（单向为主） */
+  const mutated = newNormal * p.mutRate;
+  newNormal -= mutated;
+  newLate   += mutated;
+
+  /* 极低反向变异（0.1%） */
+  const revMut = newLate * 0.001;
+  newLate   -= revMut;
+  newNormal += revMut;
+
+  newNormal = Math.max(0, newNormal);
+  newLate   = Math.max(0, newLate);
+
+  /* 承载力硬上限 */
+  const totalHares = newNormal + newLate;
+  if (totalHares > p.carryCap) {
+    const scale = p.carryCap / totalHares;
+    newNormal *= scale;
+    newLate   *= scale;
+  }
+
+  /* 捕食者动态（简化 Lotka-Volterra）
+     每个捕食者平均捕食数 → 驱动增长；固定自然死亡率驱动下降 */
+  const preyPerPred   = eaten / Math.max(1, SIM.pred);
+  const predGrowth    = Math.min(0.45, 0.12 * preyPerPred);  // 食物越丰富增长越快
+  const predDecay     = 0.13;                                  // 基础死亡率
+  let newPred = SIM.pred * (1 + predGrowth - predDecay);
+
+  /* 捕食者上限：不超过承载力的 22%（生态位约束） */
+  newPred = Math.min(p.carryCap * 0.22, newPred);
+  newPred = Math.max(1, newPred);
+
+  /* 写回状态 */
+  SIM.normal = newNormal;
+  SIM.late   = newLate;
+  SIM.pred   = newPred;
+  SIM.gen++;
+
+  /* 记录历史 */
+  const total = newNormal + newLate;
+  SIM.history.push({
+    gen       : SIM.gen,
+    normal    : Math.round(newNormal),
+    late      : Math.round(newLate),
+    pred      : Math.round(newPred),
+    lateRatio : total > 0 ? (newLate / total * 100) : 0
+  });
+}
+
+// ================================================================
+//  粒子系统
+// ================================================================
+function buildParticles() {
+  SIM.particles = [];
+  const W = canvas.width, H = canvas.height;
+  const groundY = H * 0.33;
+
+  /* 最多显示的点数（缩放自实际数量） */
+  const nNormal = Math.min(Math.round(SIM.normal), 70);
+  const nLate   = Math.min(Math.round(SIM.late),   70);
+  const nPred   = Math.min(Math.round(SIM.pred),   35);
+
+  const mkParticle = (type) => ({
+    type,
+    x  : Math.random() * (W - 60) + 30,
+    y  : groundY + 10 + Math.random() * (H - groundY - 30),
+    vx : (Math.random() - 0.5) * (type === 'pred' ? 0.9 : 0.55),
+    vy : (Math.random() - 0.5) * (type === 'pred' ? 0.65 : 0.40),
+    sz : type === 'pred' ? 8 : 5
+  });
+
+  for (let i = 0; i < nNormal; i++) SIM.particles.push(mkParticle('normal'));
+  for (let i = 0; i < nLate;   i++) SIM.particles.push(mkParticle('late'));
+  for (let i = 0; i < nPred;   i++) SIM.particles.push(mkParticle('pred'));
+}
+
+function syncParticles() {
+  const W = canvas.width, H = canvas.height;
+  const groundY = H * 0.33;
+
+  const target = {
+    normal: Math.min(Math.round(SIM.normal), 70),
+    late  : Math.min(Math.round(SIM.late),   70),
+    pred  : Math.min(Math.round(SIM.pred),   35)
+  };
+  const current = { normal: 0, late: 0, pred: 0 };
+  SIM.particles.forEach(p => current[p.type]++);
+
+  ['normal','late','pred'].forEach(type => {
+    const diff = target[type] - current[type];
+    if (diff > 0) {
+      for (let i = 0; i < diff; i++) {
+        SIM.particles.push({
+          type, sz: type === 'pred' ? 8 : 5,
+          x  : Math.random() * (W - 60) + 30,
+          y  : groundY + 10 + Math.random() * (H - groundY - 30),
+          vx : (Math.random() - 0.5) * (type === 'pred' ? 0.9 : 0.55),
+          vy : (Math.random() - 0.5) * (type === 'pred' ? 0.65 : 0.40)
+        });
+      }
+    } else if (diff < 0) {
+      let removed = 0;
+      SIM.particles = SIM.particles.filter(p => {
+        if (p.type === type && removed < -diff) { removed++; return false; }
+        return true;
+      });
+    }
+  });
+}
+
+function tickParticles() {
+  const W = canvas.width, H = canvas.height;
+  const groundY = H * 0.33;
+  SIM.particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 18)       { p.x = 18;       p.vx =  Math.abs(p.vx); }
+    if (p.x > W - 18)   { p.x = W - 18;   p.vx = -Math.abs(p.vx); }
+    if (p.y < groundY + 4) { p.y = groundY + 4; p.vy =  Math.abs(p.vy); }
+    if (p.y > H - 14)   { p.y = H - 14;   p.vy = -Math.abs(p.vy); }
+    if (Math.random() < 0.006) {
+      p.vx = (Math.random() - 0.5) * (p.type === 'pred' ? 0.9 : 0.55);
+      p.vy = (Math.random() - 0.5) * (p.type === 'pred' ? 0.65 : 0.40);
+    }
+  });
+}
+
+// ================================================================
+//  Canvas 绘制
+// ================================================================
+function drawCanvas() {
+  const W = canvas.width, H = canvas.height;
+  const snowDelay = +document.getElementById('snowDelay').value;
+  const snowFactor = 1 - snowDelay / 60;   // 1 = 完全积雪, 0 = 无雪
+  const groundY = H * 0.33;
+
+  /* 天空 */
+  const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+  sky.addColorStop(0, snowFactor > 0.5 ? '#b0d0ec' : '#c8d8c0');
+  sky.addColorStop(1, snowFactor > 0.5 ? '#d8eef8' : '#dde8d0');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, groundY);
+
+  /* 地面：根据积雪程度在白色↔褐绿色之间插值 */
+  const r1 = lerp(148, 250, snowFactor), g1 = lerp(108, 252, snowFactor), b1 = lerp( 60, 255, snowFactor);
+  const r2 = lerp( 90, 230, snowFactor), g2 = lerp( 70, 240, snowFactor), b2 = lerp( 30, 245, snowFactor);
+  const ground = ctx.createLinearGradient(0, groundY, 0, H);
+  ground.addColorStop(0, `rgb(${r1|0},${g1|0},${b1|0})`);
+  ground.addColorStop(1, `rgb(${r2|0},${g2|0},${b2|0})`);
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, groundY, W, H - groundY);
+
+  /* 地平线 */
+  ctx.strokeStyle = 'rgba(80,100,80,0.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+  /* 树木 */
+  TREE_POS.forEach((xr, i) => {
+    const tx = W * xr;
+    const ty = groundY - 2;
+    const th = 34 + (i % 3) * 10;
+    /* 树干 */
+    ctx.fillStyle = '#7a5535';
+    ctx.fillRect(tx - 3, ty, 6, 16);
+    /* 树冠 */
+    ctx.beginPath();
+    ctx.moveTo(tx, ty - th);
+    ctx.lineTo(tx + 18, ty + 6);
+    ctx.lineTo(tx - 18, ty + 6);
+    ctx.closePath();
+    const cr = lerp( 60, 160, snowFactor), cg = lerp( 90, 170, snowFactor), cb = lerp( 55, 155, snowFactor);
+    ctx.fillStyle = `rgb(${cr|0},${cg|0},${cb|0})`;
+    ctx.fill();
+    /* 积雪帽 */
+    if (snowFactor > 0.3) {
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - th);
+      ctx.lineTo(tx + 10 * snowFactor, ty - th + 14 * snowFactor);
+      ctx.lineTo(tx - 10 * snowFactor, ty - th + 14 * snowFactor);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(240,248,255,${0.85 * snowFactor})`;
+      ctx.fill();
+    }
+  });
+
+  /* 粒子（动物） */
+  SIM.particles.forEach(p => {
+    ctx.save();
+    if (p.type === 'normal') {
+      /* 正常换毛雪兔：白色圆 + 耳朵 */
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.sz, 0, Math.PI * 2);
+      ctx.fillStyle   = '#cce8f8';
+      ctx.strokeStyle = '#4a90c0';
+      ctx.lineWidth   = 1.5;
+      ctx.fill(); ctx.stroke();
+      drawEars(p.x, p.y, p.sz, '#a8d0e8');
+    } else if (p.type === 'late') {
+      /* 较晚换毛雪兔：褐色圆 + 耳朵 */
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.sz, 0, Math.PI * 2);
+      ctx.fillStyle   = '#c09050';
+      ctx.strokeStyle = '#7a5020';
+      ctx.lineWidth   = 1.5;
+      ctx.fill(); ctx.stroke();
+      drawEars(p.x, p.y, p.sz, '#a07030');
+    } else {
+      /* 捕食者：红色菱形 */
+      ctx.beginPath();
+      ctx.moveTo(p.x,          p.y - p.sz);
+      ctx.lineTo(p.x + p.sz,   p.y);
+      ctx.lineTo(p.x,          p.y + p.sz);
+      ctx.lineTo(p.x - p.sz,   p.y);
+      ctx.closePath();
+      ctx.fillStyle   = '#e04040';
+      ctx.strokeStyle = '#8a1010';
+      ctx.lineWidth   = 1.5;
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  /* 信息框（左上角） */
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.beginPath();
+  ctx.roundRect(10, 10, 200, 72, 6);
+  ctx.fill();
+  ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#4a7c59';
+  ctx.fillText(`第 ${SIM.gen} 世代`, 20, 28);
+  ctx.font = '11px sans-serif'; ctx.fillStyle = '#3b82f6';
+  ctx.fillText(`正常换毛: ${Math.round(SIM.normal)}`, 20, 45);
+  ctx.fillStyle = '#d97706';
+  ctx.fillText(`较晚换毛: ${Math.round(SIM.late)}`, 20, 61);
+  ctx.fillStyle = '#dc2626';
+  ctx.fillText(`捕食者: ${Math.round(SIM.pred)}`, 110, 45);
+
+  /* 右上角气候提示 */
+  const climate = snowDelay === 0 ? '正常气候' : snowDelay < 20 ? '轻度变暖' : snowDelay < 40 ? '中度变暖' : '严重变暖';
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.beginPath();
+  ctx.roundRect(W - 160, 10, 150, 38, 6);
+  ctx.fill();
+  ctx.font = '11px sans-serif'; ctx.fillStyle = '#555';
+  ctx.fillText(`初雪推迟 ${snowDelay} 天`, W - 148, 26);
+  ctx.fillStyle = snowDelay > 30 ? '#c05010' : '#4a7c59';
+  ctx.fillText(climate, W - 148, 40);
+}
+
+function drawEars(x, y, sz, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(x - sz * 0.55, y - sz - 4, sz * 0.35, sz * 0.8, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + sz * 0.55, y - sz - 4, sz * 0.35, sz * 0.8,  0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function lerp(a, b, t) { return a + (b - a) * Math.clamp01(t); }
+Math.clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+// ================================================================
+//  Chart.js 折线图
+// ================================================================
+let chart = null;
+
+function initChart() {
+  if (chart) { chart.destroy(); chart = null; }
+  const cCtx = document.getElementById('popChart').getContext('2d');
+  chart = new Chart(cCtx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: '正常换毛雪兔',
+          data: [],
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.07)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          tension: 0.35,
+          fill: true
+        },
+        {
+          label: '较晚换毛雪兔',
+          data: [],
+          borderColor: '#d97706',
+          backgroundColor: 'rgba(217,119,6,0.07)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          tension: 0.35,
+          fill: true
+        },
+        {
+          label: '捕食者',
+          data: [],
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220,38,38,0.04)',
+          borderWidth: 2,
+          pointRadius: 3,
+          tension: 0.35,
+          fill: false,
+          yAxisID: 'yPred'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 0 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 12 }, padding: 16 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: '世代数', font: { size: 12 } },
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        },
+        y: {
+          title: { display: true, text: '雪兔数量', font: { size: 12 } },
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        },
+        yPred: {
+          position: 'right',
+          title: { display: true, text: '捕食者数量', font: { size: 12 } },
+          beginAtZero: true,
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
+}
+
+function pushChartPoint(gen, normal, late, pred) {
+  chart.data.labels.push(gen);
+  chart.data.datasets[0].data.push(Math.round(normal));
+  chart.data.datasets[1].data.push(Math.round(late));
+  chart.data.datasets[2].data.push(Math.round(pred));
+  chart.update('none');
+}
+
+// ================================================================
+//  UI 更新
+// ================================================================
+function refreshDataPanel() {
+  const total = SIM.normal + SIM.late;
+  const ratio = total > 0 ? (SIM.late / total * 100).toFixed(1) : '0.0';
+  document.getElementById('d-gen').textContent    = SIM.gen;
+  document.getElementById('d-normal').textContent = Math.round(SIM.normal);
+  document.getElementById('d-late').textContent   = Math.round(SIM.late);
+  document.getElementById('d-pred').textContent   = Math.round(SIM.pred);
+  document.getElementById('d-ratio').textContent  = ratio + '%';
+}
+
+// ================================================================
+//  自动结论
+// ================================================================
+function generateConclusion() {
+  const p = getParams();
+  const h = SIM.history;
+  if (h.length < 2) return;
+
+  const first = h[0], last = h[h.length - 1];
+  const lateDiff = last.lateRatio - first.lateRatio;
+  const predChange = last.pred - first.pred;
+
+  let text = '';
+
+  /* 主结论：换毛比例变化 */
+  if (Math.abs(lateDiff) < 1.5) {
+    text += `经过 ${p.totalGen} 个世代的模拟，在初雪推迟 <strong>${p.snowDelay} 天</strong> 的环境条件下，正常换毛与晚换毛雪兔的种群占比基本稳定（晚换毛占比变化约 ${Math.abs(lateDiff).toFixed(1)} 个百分点），说明当前环境对两种表现型的选择压力较为均衡，种群遗传组成趋于稳定状态。`;
+  } else if (lateDiff > 0) {
+    text += `经过 ${p.totalGen} 个世代，晚换毛雪兔占比从初始 <strong>${first.lateRatio.toFixed(1)}%</strong> 上升至 <strong>${last.lateRatio.toFixed(1)}%</strong>（增加约 ${lateDiff.toFixed(1)} 个百分点）。初雪推迟 ${p.snowDelay} 天使晚换毛个体在褐色地面上具有伪装优势，被捕食率更低、后代数更多，这种有利变异在种群中逐代积累扩大——正是<strong>自然选择推动种群基因频率定向改变</strong>的体现。`;
+  } else {
+    text += `经过 ${p.totalGen} 个世代，正常换毛雪兔占比从初始 <strong>${(100 - first.lateRatio).toFixed(1)}%</strong> 上升至 <strong>${(100 - last.lateRatio).toFixed(1)}%</strong>。在初雪推迟仅 ${p.snowDelay} 天的条件下，及时变白的个体仍具适应性优势，自然选择维持了正常换毛性状在种群中的主导地位，说明<strong>稳定的气候环境有利于保持现有的种群遗传特征</strong>。`;
+  }
+
+  /* 协同进化结论 */
+  text += `<br><br>捕食者数量从初始 ${first.pred} 变化至约 ${last.pred}，`;
+  if (predChange > first.pred * 0.2) {
+    text += `随猎物丰富度增加而增长，体现了捕食者与猎物之间的<strong>协同进化</strong>：雪兔种群遗传组成的改变，也对捕食者的数量动态产生了反馈影响，两者在长期相互作用中共同适应。`;
+  } else if (predChange < -first.pred * 0.2) {
+    text += `因猎物种群压缩而下降，说明雪兔与捕食者之间存在相互制约的<strong>捕食者–猎物动态平衡</strong>，印证了协同进化中双方相互施加选择压力的"军备竞赛"逻辑。`;
+  } else {
+    text += `与雪兔种群维持了相对稳定的动态平衡，体现了生态系统中捕食者与猎物之间的<strong>协同进化与自我调节</strong>能力。`;
+  }
+
+  document.getElementById('conclusionText').innerHTML = text;
+  const sec = document.getElementById('conclusionSection');
+  sec.style.display = 'block';
+  setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ================================================================
+//  动画循环（独立于模拟步长）
+// ================================================================
+function startAnimLoop() {
+  if (SIM.animId) cancelAnimationFrame(SIM.animId);
+  function loop() {
+    tickParticles();
+    drawCanvas();
+    SIM.animId = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function stopAnimLoop() {
+  if (SIM.animId) { cancelAnimationFrame(SIM.animId); SIM.animId = null; }
+}
+
+// ================================================================
+//  控制按钮
+// ================================================================
+function handleStart() {
+  const p = getParams();
+
+  if (!SIM.running) {
+    /* 全新开始 */
+    SIM.normal  = p.initNormal;
+    SIM.late    = p.initLate;
+    SIM.pred    = p.initPred;
+    SIM.gen     = 0;
+    SIM.history = [];
+    SIM.running = true;
+    SIM.paused  = false;
+
+    initChart();
+    pushChartPoint(0, SIM.normal, SIM.late, SIM.pred);
+    refreshDataPanel();
+    buildParticles();
+    document.getElementById('conclusionSection').style.display = 'none';
+
+  } else if (SIM.paused) {
+    /* 继续 */
+    SIM.paused = false;
+    document.getElementById('startBtn').textContent = '▶ 开始模拟';
+  }
+
+  document.getElementById('startBtn').disabled  = true;
+  document.getElementById('pauseBtn').disabled  = false;
+  document.getElementById('pauseBtn').textContent = '⏸ 暂停模拟';
+
+  /* 启动模拟定时器 */
+  SIM.timer = setInterval(() => {
+    if (SIM.paused) return;
+    if (SIM.gen >= p.totalGen || (SIM.normal + SIM.late) < 2) {
+      clearInterval(SIM.timer);
+      SIM.running = false;
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('pauseBtn').disabled = true;
+      generateConclusion();
+      return;
+    }
+    simStep();
+    syncParticles();
+    refreshDataPanel();
+    pushChartPoint(SIM.gen, SIM.normal, SIM.late, SIM.pred);
+  }, p.simSpeed);
+
+  startAnimLoop();
+}
+
+function handlePause() {
+  if (!SIM.running) return;
+  if (!SIM.paused) {
+    SIM.paused = true;
+    document.getElementById('pauseBtn').textContent = '▶ 继续模拟';
+    document.getElementById('startBtn').disabled    = false;
+    document.getElementById('startBtn').textContent = '▶ 继续模拟';
+  } else {
+    SIM.paused = false;
+    document.getElementById('pauseBtn').textContent = '⏸ 暂停模拟';
+    document.getElementById('startBtn').disabled    = true;
+    document.getElementById('startBtn').textContent = '▶ 开始模拟';
+  }
+}
+
+function handleReset() {
+  clearInterval(SIM.timer);
+  stopAnimLoop();
+  SIM.running = false;
+  SIM.paused  = false;
+
+  const p = getParams();
+  SIM.gen    = 0;
+  SIM.normal = p.initNormal;
+  SIM.late   = p.initLate;
+  SIM.pred   = p.initPred;
+  SIM.history = [];
+
+  refreshDataPanel();
+  initChart();
+  buildParticles();
+  drawCanvas();
+
+  document.getElementById('startBtn').disabled    = false;
+  document.getElementById('startBtn').textContent = '▶ 开始模拟';
+  document.getElementById('pauseBtn').disabled    = true;
+  document.getElementById('pauseBtn').textContent = '⏸ 暂停模拟';
+  document.getElementById('conclusionSection').style.display = 'none';
+}
+
+function handleSave() {
+  /* 将 canvas 截图下载 */
+  drawCanvas(); // 保证最新帧
+  const link = document.createElement('a');
+  link.download = `雪兔模拟_第${SIM.gen}代_${new Date().toISOString().slice(0,10)}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ================================================================
+//  滑块绑定
+// ================================================================
+function bindSliders() {
+  const defs = [
+    { id: 'snowDelay',    vId: 'v-snowDelay',    fmt: v => v },
+    { id: 'predPressure', vId: 'v-predPressure', fmt: v => parseFloat(v).toFixed(2) },
+    { id: 'carryCap',     vId: 'v-carryCap',     fmt: v => v },
+    { id: 'normalHares',  vId: 'v-normalHares',  fmt: v => v },
+    { id: 'initPred',     vId: 'v-initPred',     fmt: v => v },
+    { id: 'reproRate',    vId: 'v-reproRate',     fmt: v => parseFloat(v).toFixed(1) },
+    { id: 'mutRate',      vId: 'v-mutRate',       fmt: v => parseFloat(v).toFixed(1) + '%' },
+    { id: 'totalGen',     vId: 'v-totalGen',      fmt: v => v }
+  ];
+
+  defs.forEach(({ id, vId, fmt }) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      document.getElementById(vId).textContent = fmt(el.value);
+
+      /* normalHares 联动更新 lateHares 显示 */
+      if (id === 'normalHares') {
+        document.getElementById('v-lateHares').textContent = 100 - (+el.value);
+      }
+
+      /* 未运行时同步数据面板 & 重绘画布 */
+      if (!SIM.running) {
+        const p = getParams();
+        SIM.normal = p.initNormal;
+        SIM.late   = p.initLate;
+        SIM.pred   = p.initPred;
+        refreshDataPanel();
+        buildParticles();
+        drawCanvas();
+      }
+    });
+  });
+}
+
+// ================================================================
+//  初始化
+// ================================================================
+window.addEventListener('load', () => {
+  bindSliders();
+  initChart();
+
+  const p = getParams();
+  SIM.normal = p.initNormal;
+  SIM.late   = p.initLate;
+  SIM.pred   = p.initPred;
+  refreshDataPanel();
+  buildParticles();
+  drawCanvas();
+});
+</script>
+</body>
+</html>

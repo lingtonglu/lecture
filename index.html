@@ -615,36 +615,7 @@
     </div>
   </div>
 
-  <!-- ③ 动态模拟区 -->
-  <div class="section">
-    <div class="section-title">动态模拟区</div>
-    <canvas id="simCanvas" width="1060" height="300"></canvas>
-    <div class="canvas-legend">
-      <div class="legend-item">
-        <div class="legend-dot" style="background:#c8e8f8; border-color:#5a9fc0;"></div>
-        正常换毛雪兔（白色毛）
-      </div>
-      <div class="legend-item">
-        <div class="legend-dot" style="background:#c89050; border-color:#8a5820;"></div>
-        较晚换毛雪兔（褐色毛）
-      </div>
-      <div class="legend-item">
-        <div class="legend-diamond"></div>
-        捕食者（猞猁 / 狐狸）
-      </div>
-    </div>
-  </div>
-
-  <!-- ④ 数据图表区 -->
-  <div class="section">
-    <div class="section-title">数据图表区</div>
-    <div class="chart-hint">横轴：世代数 &nbsp;|&nbsp; 左纵轴：雪兔数量 &nbsp;|&nbsp; 右纵轴：捕食者数量 &nbsp;|&nbsp; 折线实时更新，体现协同进化动态 &nbsp;|&nbsp; <strong>点击图例名称可切换折线显示/隐藏</strong></div>
-    <div class="chart-wrap">
-      <canvas id="popChart"></canvas>
-    </div>
-  </div>
-
-  <!-- ⑤ 交互按钮区 -->
+  <!-- ⑤ 模拟控制与实时数据 -->
   <div class="section">
     <div class="section-title">模拟控制与实时数据</div>
     <div class="ctrl-row">
@@ -674,6 +645,35 @@
         <div class="data-card-lbl">晚换毛占比</div>
         <div class="data-card-val"          id="d-ratio">20.0%</div>
       </div>
+    </div>
+  </div>
+
+  <!-- ③ 动态模拟区 -->
+  <div class="section">
+    <div class="section-title">动态模拟区</div>
+    <canvas id="simCanvas" width="1060" height="300"></canvas>
+    <div class="canvas-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#c8e8f8; border-color:#5a9fc0;"></div>
+        正常换毛雪兔（白色毛）
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#c89050; border-color:#8a5820;"></div>
+        较晚换毛雪兔（褐色毛）
+      </div>
+      <div class="legend-item">
+        <div class="legend-diamond"></div>
+        捕食者（猞猁 / 狐狸）
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 数据图表区 -->
+  <div class="section">
+    <div class="section-title">数据图表区</div>
+    <div class="chart-hint">横轴：世代数 &nbsp;|&nbsp; 左纵轴：雪兔数量 &nbsp;|&nbsp; 右纵轴：捕食者数量 &nbsp;|&nbsp; 折线实时更新，体现协同进化动态 &nbsp;|&nbsp; <strong>点击图例名称可切换折线显示/隐藏</strong></div>
+    <div class="chart-wrap">
+      <canvas id="popChart"></canvas>
     </div>
   </div>
 

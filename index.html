@@ -199,6 +199,15 @@
       accent-color: var(--blue);
       cursor: pointer;
     }
+    input[type="range"]:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .param-item.locked .param-label,
+    .param-item.locked .param-hint,
+    .param-item.locked .linked-display {
+      opacity: 0.55;
+    }
     .param-hint {
       font-size: 0.73em;
       color: #9aacbc;
@@ -552,7 +561,7 @@
 
       <div class="param-group">
         <div class="param-group-title">初始种群（总计 100 个体）</div>
-        <div class="param-item">
+        <div class="param-item" data-lock-on-run>
           <div class="param-label">
             <span>正常换毛雪兔</span>
             <span class="param-val" id="v-normalHares">80</span>
@@ -560,7 +569,7 @@
           <input type="range" id="normalHares" min="0" max="100" value="80" step="1">
           <div class="linked-display">较晚换毛雪兔：<strong id="v-lateHares">20</strong> 个（自动联动）</div>
         </div>
-        <div class="param-item">
+        <div class="param-item" data-lock-on-run>
           <div class="param-label">
             <span>捕食者初始数量</span>
             <span class="param-val" id="v-initPred">15</span>
@@ -597,7 +606,7 @@
             <span>模拟总世代数</span>
             <span class="param-val" id="v-totalGen">30</span>
           </div>
-          <input type="range" id="totalGen" min="10" max="100" value="30" step="5">
+          <input type="range" id="totalGen" min="10" max="100" value="30" step="1">
           <div class="param-hint">10–100 世代</div>
         </div>
         <div class="param-item">
@@ -1243,53 +1252,93 @@ function stopAnimLoop() {
 // ================================================================
 //  控制按钮
 // ================================================================
+/* ================================================================
+   运行期参数锁定：
+   - 初始种群（正常换毛/捕食者初始数量）：模拟开始后不可改
+   - 模拟总世代数：下限动态跟随当前世代（不可回退到已过世代）
+   ================================================================ */
+function setRunningLocks(isRunning) {
+  /* 初始种群类参数：整块锁定 */
+  document.querySelectorAll('[data-lock-on-run]').forEach(item => {
+    const slider = item.querySelector('input[type="range"]');
+    if (slider) slider.disabled = isRunning;
+    item.classList.toggle('locked', isRunning);
+  });
+
+  /* 模拟总世代数的下限约束改为「输入时拦截」，此处不动 min/value，
+     防止每代改 min 导致滑块视觉漂移。see bindSliders 中的处理。 */
+}
+
 function handleStart() {
-  const p = getParams();
-
-  if (!SIM.running) {
-    /* 全新开始 */
-    SIM.normal  = p.initNormal;
-    SIM.late    = p.initLate;
-    SIM.pred    = p.initPred;
-    SIM.gen     = 0;
-    SIM.history = [];
-    SIM.running = true;
-    SIM.paused  = false;
-
-    initChart();
-    pushChartPoint(0, SIM.normal, SIM.late, SIM.pred);
-    refreshDataPanel();
-    buildParticles();
-    document.getElementById('conclusionSection').style.display = 'none';
-
-  } else if (SIM.paused) {
-    /* 继续 */
+  /* 场景 1：已在运行但暂停中 → 仅解除暂停，沿用原定时器 */
+  if (SIM.running && SIM.paused) {
     SIM.paused = false;
     document.getElementById('startBtn').textContent = '▶ 开始模拟';
+    document.getElementById('startBtn').disabled    = true;
+    document.getElementById('pauseBtn').disabled    = false;
+    document.getElementById('pauseBtn').textContent = '⏸ 暂停模拟';
+    return;
   }
 
-  document.getElementById('startBtn').disabled  = true;
-  document.getElementById('pauseBtn').disabled  = false;
+  /* 场景 2：已在运行且未暂停 → 无需重复启动 */
+  if (SIM.running && !SIM.paused) return;
+
+  /* 场景 3：全新开始 */
+  const p = getParams();
+  SIM.normal  = p.initNormal;
+  SIM.late    = p.initLate;
+  SIM.pred    = p.initPred;
+  SIM.gen     = 0;
+  SIM.history = [];
+  SIM.running = true;
+  SIM.paused  = false;
+
+  initChart();
+  pushChartPoint(0, SIM.normal, SIM.late, SIM.pred);
+  refreshDataPanel();
+  buildParticles();
+  document.getElementById('conclusionSection').style.display = 'none';
+
+  document.getElementById('startBtn').disabled    = true;
+  document.getElementById('pauseBtn').disabled    = false;
   document.getElementById('pauseBtn').textContent = '⏸ 暂停模拟';
 
-  /* 启动模拟定时器 */
-  SIM.timer = setInterval(() => {
-    if (SIM.paused) return;
-    if (SIM.gen >= p.totalGen || (SIM.normal + SIM.late) < 2) {
-      clearInterval(SIM.timer);
-      SIM.running = false;
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('pauseBtn').disabled = true;
-      generateConclusion();
-      return;
-    }
-    simStep();
-    syncParticles();
-    refreshDataPanel();
-    pushChartPoint(SIM.gen, SIM.normal, SIM.late, SIM.pred);
-  }, p.simSpeed);
+  setRunningLocks(true);  /* 锁定不可运行期修改的参数 */
+
+  /* 清除可能残留的旧定时器，启动递归式调度（每步重读 simSpeed / totalGen） */
+  clearTimeout(SIM.timer);
+  scheduleNextStep();
 
   startAnimLoop();
+}
+
+/* 递归调度下一步：每次重新读取当前的 simSpeed，支持运行中改速度 */
+function scheduleNextStep() {
+  const speed = +document.getElementById('simSpeed').value;
+  SIM.timer = setTimeout(simTick, speed);
+}
+
+function simTick() {
+  if (!SIM.running) return;              /* 已被 reset */
+  if (SIM.paused) { scheduleNextStep(); return; }  /* 暂停中继续等 */
+
+  const p = getParams();                 /* 每步实时读取参数 */
+  if (SIM.gen >= p.totalGen || (SIM.normal + SIM.late) < 2) {
+    clearTimeout(SIM.timer);
+    SIM.timer = null;
+    SIM.running = false;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    setRunningLocks(false);              /* 解锁参数 */
+    generateConclusion();
+    return;
+  }
+
+  simStep();
+  syncParticles();
+  refreshDataPanel();
+  pushChartPoint(SIM.gen, SIM.normal, SIM.late, SIM.pred);
+  scheduleNextStep();
 }
 
 function handlePause() {
@@ -1308,7 +1357,8 @@ function handlePause() {
 }
 
 function handleReset() {
-  clearInterval(SIM.timer);
+  clearTimeout(SIM.timer);
+  SIM.timer = null;
   stopAnimLoop();
   SIM.running = false;
   SIM.paused  = false;
@@ -1330,6 +1380,7 @@ function handleReset() {
   document.getElementById('pauseBtn').disabled    = true;
   document.getElementById('pauseBtn').textContent = '⏸ 暂停模拟';
   document.getElementById('conclusionSection').style.display = 'none';
+  setRunningLocks(false);                /* 重置时解锁 */
 }
 
 function handleSave() {
@@ -1359,6 +1410,13 @@ function bindSliders() {
   defs.forEach(({ id, vId, fmt }) => {
     const el = document.getElementById(id);
     el.addEventListener('input', () => {
+      /* totalGen 在运行中不允许回退到 <= 当前世代 */
+      if (id === 'totalGen' && SIM.running && +el.value <= SIM.gen) {
+        /* 回弹到 >= 当前世代的最近合法 step */
+        const step = +el.step || 1;
+        const floor = Math.ceil((SIM.gen + 1) / step) * step;
+        el.value = Math.min(+el.max, floor);
+      }
       document.getElementById(vId).textContent = fmt(el.value);
 
       /* normalHares 联动更新 lateHares 显示 */

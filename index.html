@@ -496,6 +496,12 @@
       font-size: 0.76em;
       color: #4a6880;
     }
+    .footer-credit {
+      margin-top: 10px;
+      font-size: 0.92em;
+      letter-spacing: 2px;
+      color: #5b7a96;
+    }
 
     /* ============================================================
        RESPONSIVE
@@ -741,6 +747,7 @@
     <hr class="footer-divider">
     <div class="footer-bottom">
       以上内容由 AI 辅助生成，仅供教学参考
+      <div class="footer-credit">小韦青子 制作</div>
     </div>
   </div>
 </footer>
@@ -794,36 +801,50 @@ function simStep() {
   const p = getParams();
   const delayFactor = p.snowDelay / 60;  // 0–1，越大越有利于晚换毛
 
+  /* ======== 环境随机波动 ========
+     真实生态中每代的气候/食物/疾病都有年际差异，纯确定性模型会收敛到死线。
+     加入轻度噪声，使种群在平衡点附近持续起伏，更贴近真实。 */
+  const rand = (amp) => 1 + (Math.random() - 0.5) * 2 * amp;
+
   /* 捕食者相对于初始数量的倍数，影响整体捕食强度 */
   const predScale = Math.min(2.8, SIM.pred / Math.max(1, p.initPred));
 
   /* 各类雪兔的被捕食率：
      正常换毛 → 初雪推迟时白色毛在褐色地面显眼，捕食率随 delay 升高
-     较晚换毛 → 初雪推迟时褐色毛与地面匹配，捕食率随 delay 降低         */
-  const normalPredRate = Math.min(0.92, p.predPress * (1 + delayFactor * 1.6) * predScale);
-  const latePredRate   = Math.min(0.92, p.predPress * Math.max(0.05, 1 - delayFactor * 0.75) * predScale);
+     较晚换毛 → 初雪推迟时褐色毛与地面匹配，捕食率随 delay 降低
+     每代叠加 ±10% 气候/捕食者活动波动                                  */
+  const normalPredRate = Math.min(0.92, p.predPress * (1 + delayFactor * 1.6) * predScale * rand(0.10));
+  const latePredRate   = Math.min(0.92, p.predPress * Math.max(0.05, 1 - delayFactor * 0.75) * predScale * rand(0.10));
 
   /* 存活个体数 */
   const normalSurv = SIM.normal * (1 - normalPredRate);
   const lateSurv   = SIM.late   * (1 - latePredRate);
 
-  /* 被捕食总数（用于驱动捕食者增长） */
-  const eaten = (SIM.normal - normalSurv) + (SIM.late - lateSurv);
+  /* 分别记录两类雪兔的被捕食量 */
+  const eatenNormal = SIM.normal - normalSurv;
+  const eatenLate   = SIM.late   - lateSurv;
 
-  /* 种群密度制约（逻辑斯谛）：存活者越密集，繁殖空间越少 */
-  const logistic = Math.max(0.08, 1 - (normalSurv + lateSurv) / p.carryCap);
+  /* ======== 捕食者的"有效食物" ========
+     正常换毛兔（白毛）在褐色地面显眼：捕食者能快速发现并捕获 → 能量回报高
+     较晚换毛兔（褐毛）与地面融为一体：即使被偶尔捕到，捕食者也要消耗更多时间/体力
+     因此"有效食物"不是简单的被吃总数，而是带权重的 —— 这是本次模型的关键改动之一 */
+  const effectiveFood = eatenNormal * 1.0 + eatenLate * 0.45;
 
-  /* 繁殖 */
-  let newNormal = normalSurv * p.reproRate * logistic;
-  let newLate   = lateSurv   * p.reproRate * logistic;
+  /* 种群密度制约（逻辑斯谛）：存活者越密集，繁殖空间越少
+     下限从 0.08 降到 0.03 → 种群接近承载力时繁殖进一步受限，避免死死贴在上限 */
+  const logistic = Math.max(0.03, 1 - (normalSurv + lateSurv) / p.carryCap);
+
+  /* 繁殖：叠加 ±8% 年际繁殖率波动（食物、疾病等自然变化） */
+  let newNormal = normalSurv * p.reproRate * logistic * rand(0.08);
+  let newLate   = lateSurv   * p.reproRate * logistic * rand(0.08);
 
   /* 变异：正常 → 晚换毛（单向为主） */
   const mutated = newNormal * p.mutRate;
   newNormal -= mutated;
   newLate   += mutated;
 
-  /* 极低反向变异（0.1%） */
-  const revMut = newLate * 0.001;
+  /* 反向变异提高到 0.5%：给正常换毛种群一丝恢复机会，避免绝对灭绝后再无动态 */
+  const revMut = newLate * 0.005;
   newLate   -= revMut;
   newNormal += revMut;
 
@@ -838,15 +859,25 @@ function simStep() {
     newLate   *= scale;
   }
 
-  /* 捕食者动态（简化 Lotka-Volterra）
-     每个捕食者平均捕食数 → 驱动增长；固定自然死亡率驱动下降 */
-  const preyPerPred   = eaten / Math.max(1, SIM.pred);
-  const predGrowth    = Math.min(0.45, 0.12 * preyPerPred);  // 食物越丰富增长越快
-  const predDecay     = 0.13;                                  // 基础死亡率
-  let newPred = SIM.pred * (1 + predGrowth - predDecay);
+  /* ======== 捕食者动态（改进版 Lotka-Volterra）========
+     ① 增长项：依赖"有效食物"而非总猎物数
+        → 若晚换毛兔成为主体，即使总猎物多，捕食者也难以获得足够能量
+     ② 死亡项：基础死亡率 + 饥饿额外死亡率
+        → 正常换毛兔稀少、且初雪推迟严重时，捕食者找不到容易捕捉的猎物，饥饿加剧
+        → 体现"环境变化不仅影响猎物，也反过来影响捕食者的捕食难度" */
+  const preyPerPred = effectiveFood / Math.max(1, SIM.pred);
+  const predGrowth  = Math.min(0.45, 0.14 * preyPerPred);
 
-  /* 捕食者上限：不超过承载力的 22%（生态位约束） */
-  newPred = Math.min(p.carryCap * 0.22, newPred);
+  /* 饥饿额外死亡：当"易捕食猎物"（正常换毛兔）比例下降，且雪推迟越大，饥饿越严重 */
+  const normalFrac  = SIM.normal / Math.max(1, SIM.normal + SIM.late);
+  const starveRate  = 0.18 * (1 - normalFrac) * delayFactor;  // 0 ~ 0.18
+  const predDecay   = 0.12 + starveRate;
+
+  /* 捕食者也受年际波动影响（±8%） */
+  let newPred = SIM.pred * (1 + predGrowth - predDecay) * rand(0.08);
+
+  /* 捕食者上限：不超过承载力的 28%（生态位约束，放宽让振荡更明显） */
+  newPred = Math.min(p.carryCap * 0.28, newPred);
   newPred = Math.max(1, newPred);
 
   /* 写回状态 */
@@ -1124,16 +1155,6 @@ function initChart() {
           tension: 0.35,
           fill: false,
           yAxisID: 'yPred'
-        },
-        {
-          label: '雪兔总数',
-          data: [],
-          borderColor: '#0a9396',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 2,
-          tension: 0.35,
-          fill: false
         }
       ]
     },
@@ -1143,7 +1164,7 @@ function initChart() {
       animation: { duration: 0 },
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'top', labels: { font: { size: 11 }, padding: 14 } },
+        legend: { position: 'top', labels: { font: { size: 13, weight: '600' }, padding: 14 } },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.raw)}`
@@ -1152,17 +1173,20 @@ function initChart() {
       },
       scales: {
         x: {
-          title: { display: true, text: '世代数', font: { size: 11 } },
+          title: { display: true, text: '世代数', font: { size: 13, weight: '600' } },
+          ticks: { font: { size: 13, weight: '600' }, color: '#334455' },
           grid: { color: 'rgba(0,0,0,0.04)' }
         },
         y: {
-          title: { display: true, text: '雪兔数量', font: { size: 11 } },
+          title: { display: true, text: '雪兔数量', font: { size: 13, weight: '600' }, color: '#1a2a38' },
+          ticks: { font: { size: 14, weight: '700' }, color: '#1a2a38' },
           beginAtZero: true,
           grid: { color: 'rgba(0,0,0,0.04)' }
         },
         yPred: {
           position: 'right',
-          title: { display: true, text: '捕食者数量', font: { size: 11 } },
+          title: { display: true, text: '捕食者数量', font: { size: 13, weight: '600' }, color: '#c83030' },
+          ticks: { font: { size: 14, weight: '700' }, color: '#c83030' },
           beginAtZero: true,
           grid: { drawOnChartArea: false }
         }
@@ -1176,7 +1200,6 @@ function pushChartPoint(gen, normal, late, pred) {
   chart.data.datasets[0].data.push(Math.round(normal));
   chart.data.datasets[1].data.push(Math.round(late));
   chart.data.datasets[2].data.push(Math.round(pred));
-  chart.data.datasets[3].data.push(Math.round(normal + late));
   chart.update('none');
 }
 
